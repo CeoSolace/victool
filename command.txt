@@ -1,3 +1,2 @@
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe' -OutFile 'python-installer.exe'"
-
-python-installer.exe /quiet /simple /norestart InstallAllUsers=0 Include_test=0 PrependPath=1
+set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311\Scripts
+set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311
