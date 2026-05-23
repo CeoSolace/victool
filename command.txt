@@ -1,5 +1,13 @@
-REM Use full path to pip
-"%LOCALAPPDATA%\Programs\Python\Python311\Scripts\pip.exe" --version
+# Install Python silently
+Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe' -OutFile 'python.exe'
+Start-Process -FilePath 'python.exe' -ArgumentList '/quiet /simple /norestart InstallAllUsers=0 PrependPath=1' -Wait
 
-REM If it works, install packages using full path
-"%LOCALAPPDATA%\Programs\Python\Python311\Scripts\pip.exe" install pillow pyautogui keyboard pywin32 opencv-python numpy
+# Wait for install
+Start-Sleep -Seconds 15
+
+# Install required packages
+python -m ensurepip --upgrade
+python -m pip install --upgrade pip
+python -m pip install pillow pyautogui keyboard pywin32 opencv-python numpy
+
+Write-Host "Installation finished! Now creating client.py..." -ForegroundColor Green
