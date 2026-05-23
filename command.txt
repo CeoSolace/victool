@@ -1,2 +1,1 @@
-set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311\Scripts
-set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311
+pip install pillow pyautogui keyboard pywin32 opencv-python numpy
