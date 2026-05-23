@@ -1,6 +1,5 @@
-REM 1. Refresh PATH
-set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311\Scripts;%LOCALAPPDATA%\Programs\Python\Python311
+REM Use full path to pip
+"%LOCALAPPDATA%\Programs\Python\Python311\Scripts\pip.exe" --version
 
-REM 2. Check if Python and pip are working now
-python --version
-pip --version
+REM If it works, install packages using full path
+"%LOCALAPPDATA%\Programs\Python\Python311\Scripts\pip.exe" install pillow pyautogui keyboard pywin32 opencv-python numpy
