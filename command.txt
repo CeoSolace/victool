@@ -1,1 +1,1 @@
-python -m pip install pillow pyautogui keyboard pywin32 opencv-python numpy
+notepad client.py
