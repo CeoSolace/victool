@@ -1,1 +1,6 @@
-pip install pillow pyautogui keyboard pywin32 opencv-python numpy
+REM 1. Refresh PATH
+set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311\Scripts;%LOCALAPPDATA%\Programs\Python\Python311
+
+REM 2. Check if Python and pip are working now
+python --version
+pip --version
