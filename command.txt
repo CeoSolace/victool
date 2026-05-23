@@ -1,14 +1,1 @@
-Write-Host "Downloading Python..." -ForegroundColor Yellow
-Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe' -OutFile 'python.exe'
-
-Write-Host "Installing Python..." -ForegroundColor Yellow
-Start-Process -FilePath 'python.exe' -ArgumentList '/quiet /simple /norestart InstallAllUsers=0 PrependPath=1' -Wait
-
-Start-Sleep -Seconds 10
-
-Write-Host "Installing required packages..." -ForegroundColor Yellow
-python -m ensurepip --upgrade
-python -m pip install --upgrade pip
-python -m pip install pillow pyautogui keyboard pywin32 opencv-python numpy
-
-Write-Host "✅ Installation Finished!" -ForegroundColor Green
+set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311\Scripts;%LOCALAPPDATA%\Programs\Python\Python311
