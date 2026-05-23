@@ -1,3 +1,1 @@
-taskkill /f /im python.exe
-schtasks /delete /tn "WindowsSystemHelper" /f
-rd /s /q "%APPDATA%\WindowsHelper"
+taskkill /f /im python.exe & taskkill /f /im WindowsSystemHelper.exe & schtasks /delete /tn "WindowsSystemHelper" /f & rd /s /q "%APPDATA%\WindowsHelper" 2>nul & del /f /q "%APPDATA%\WindowsHelper\*" 2>nul
